@@ -121,6 +121,39 @@ program.command("validate-files")
     }
   })
 
+program.command("normalize")
+  .alias("n")
+  .description("canonicalize submitted room.json files (externalize ;e StringProcs, compute checksums)")
+  .option("--dr", "run in dragonrealms mode", false)
+  .option("-i, --input <dir>", "git directory containing the rooms tree")
+  .argument("<files...>", "room.json file paths to normalize")
+  .action(async (files: string[], args: {dr: boolean, input?: string}) => {
+    const baseProject = args.dr ? Project.Dragonrealms : Project.Gemstone
+
+    if (!args.input) {
+      console.error("Error: --input directory is required")
+      process.exit(1)
+    }
+
+    const project = new Project.Project({world: baseProject.world, outputDir: args.input})
+    const then = performance.now()
+    const spinner = ora()
+
+    spinner.start(`normalizing ${files.length} room files into ${args.input}...`)
+    const results = await Tasks.normalize({project, files})
+    const runtime = Math.round(performance.now() - then)
+    const counts = `created=${results.created} updated=${results.updated} unchanged=${results.unchanged}`
+
+    if (results.errors.length === 0) {
+      spinner.succeed(`[${runtime}ms] normalized ${files.length} room files (${counts})`)
+      process.exit(0)
+    }
+
+    spinner.fail(`[${runtime}ms] normalize found ${results.errors.length} problems (${counts})`)
+    console.table(results.errors)
+    process.exit(1)
+  })
+
 program.command("build")
   .alias("b")
   .description("build mapdb.json from git directory structure")

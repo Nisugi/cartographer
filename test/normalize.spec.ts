@@ -188,6 +188,28 @@ test("normalize rejects userland references to procs the repo does not have", as
   }
 })
 
+test("normalize rejects unknown climate/terrain values with a readable error", async () => {
+  const gitDir = tempDir("bad-climate")
+  const roomFile = path.join(gitDir, "rooms", "100", "room.json")
+
+  try {
+    await fs.rm(gitDir, { recursive: true, force: true })
+    const submission = rawRoom(100)
+    // Valid components in the wrong order - the enum only knows "arid, temperate"
+    ;(submission.room as any).climate = "temperate, arid"
+    await writeJson(roomFile, submission)
+
+    const project = new Project({ world: "gs", outputDir: gitDir })
+    const results = await Tasks.normalize({ project, files: [roomFile] })
+
+    expect(results.created + results.updated + results.unchanged).toBe(0)
+    expect(results.errors.length).toBe(1)
+    expect(results.errors[0].error).toContain("climate")
+  } finally {
+    await fs.rm(gitDir, { recursive: true, force: true })
+  }
+})
+
 test("normalize reports readable validation errors", async () => {
   const gitDir = tempDir("invalid")
   const roomFile = path.join(gitDir, "rooms", "100", "room.json")

@@ -33,3 +33,20 @@ by hand-editing converted output.
 - [ ] provide tools for working directly with the mapDB
 - [ ] create a `;go2` utility that uses the tarball from this repository
 - [ ] some sort of bot that pulls and merges changes from the MapDB (this is difficult)
+## Command risk lint
+
+Submission CI runs lich-5's validator with this repo's allowlists:
+
+```
+ruby tools/mapdb_validate.rb --rooms <tree> --forbid-procs \
+     --lint-commands config/allowlists/command-allowlist-gs.json
+```
+
+Any wayto command starting with a wealth/item-moving verb (`give`,
+`put`, `drop`, `_drag`, `trade`, `accept`, `sell`, `deposit`,
+`withdraw`) fails validation unless its `room:dest` edge is listed in
+`config/allowlists/`. Legitimate uses are tolls, donations, and prop
+puzzles - currently 9 GS edges and 1 DR edge. Approving a new one is
+an allowlist addition in the same PR as the edge, so the command and
+its human sign-off appear in one diff. The allowlist lives here, not
+in lich-5, so approvals never wait on a Lich release.

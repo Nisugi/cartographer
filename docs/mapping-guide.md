@@ -320,6 +320,32 @@ code in the map, and that's the point.
 
 ---
 
+## Runtime edges from scripts (teleport rings, etc.)
+
+Some scripts edit the **in-memory** map at runtime — `teleport.lic` links
+your ring's two rooms with temporary edges, for example. This still works
+exactly as before: scripts may assign StringProcs (or plain Ruby procs,
+which is cleaner) to `wayto`/`timeto` at runtime, and both go2 and the
+router accept them. The zero-StringProc rule applies to the **published map
+data**, not to what a running script does to its own session — a script
+that creates an edge could do anything anyway, so nothing new is trusted.
+
+Two cautions:
+
+- **Never save runtime edges into a submission.** A map saved while
+  teleport edges are live would carry `;e` procs and fail
+  `--forbid-procs` CI — which is the system catching exactly what it
+  should. Well-behaved scripts (teleport.lic does) remove their edges when
+  done.
+- **Renumbering/merging rooms with schema edges** (mapmap's merge flow):
+  schema edges display and search fine, but ids *inside* schema —
+  `same_as`, `cross`, `in_room:`, `until_room` — are not rewritten by
+  mapmap's proc-oriented renumber. If you merge a room that schema
+  references, update those ids by hand in the affected `room.json` files
+  (grep the tree for the old id).
+
+---
+
 ## Reference
 
 ### Steps (`wayto` step lists)

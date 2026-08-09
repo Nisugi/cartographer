@@ -1,10 +1,11 @@
 import * as z from "zod"
 import { ClimateValidator } from "./climate"
 import { TerrainValidator } from "./terrain"
+import { WaytoSchemaValidator, TimetoSchemaValidator } from "./edge"
 
 export const TimetoValidator = z.record(
     z.string(),
-    z.union([z.number(), z.string(), z.null()])
+    z.union([z.number(), z.string(), z.null(), TimetoSchemaValidator])
 )
 
 export const PathsValidator = z.union([
@@ -26,7 +27,7 @@ export const RoomValidator = z.object({
     "location": z.union([z.boolean(), z.null(), z.string()]).optional(),
     "climate": z.union([ClimateValidator, z.null()]).optional(),
     "terrain": z.union([TerrainValidator, z.null()]).optional(),
-    "wayto": z.record(z.string(), z.string()),
+    "wayto": z.record(z.string(), z.union([z.string(), WaytoSchemaValidator])),
     "timeto": TimetoValidator,
     "tags": z.union([z.array(z.string()), z.null()]).optional(),
     "uid": BackendIdValidator,

@@ -14,6 +14,7 @@ This project uses **Bun** as the JavaScript runtime and package manager. The cod
 - `bun run mapdb validate --dr` - Validate DragonRealms mapdb
 - `bun run mapdb git` - Generate git-friendly mapdb output on filesystem
 - `bun run mapdb git --dr` - Generate git-friendly DragonRealms mapdb
+- `bun run mapdb convert --lich5 <dir>` - Convert `;e` StringProcs to MapEngine schema (Ruby converter in lich-5; also honors `LICH5_DIR`)
 - `bun test` - Run test suite
 
 ### CLI Tool

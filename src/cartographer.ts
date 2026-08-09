@@ -54,6 +54,37 @@ program.command("validate")
     process.exit(1)
   })
 
+program.command("convert")
+  .description("convert ;e StringProcs into MapEngine schema via the lich-5 converter")
+  .option("--dr", "run in dragonrealms mode", false)
+  .option("-i, --input <file>", "input mapdb.json file path")
+  .option("-o, --output <file>", "output converted mapdb.json path")
+  .option("--lich5 <dir>", "lich-5 checkout with tools/mapdb_convert.rb (or set LICH5_DIR)")
+  .action(async (args: {dr: boolean, input?: string, output?: string, lich5?: string}) => {
+    const project = args.dr ? Project.Dragonrealms : Project.Gemstone
+    const lich5Dir = args.lich5 || process.env.LICH5_DIR
+    const spinner = ora()
+    if (!lich5Dir) {
+      spinner.fail("no lich-5 checkout: pass --lich5 <dir> or set LICH5_DIR")
+      return process.exit(1)
+    }
+    const then = performance.now()
+    spinner.start(`converting StringProcs to MapEngine schema...`)
+    try {
+      const result = await Tasks.convert({project, lich5Dir, inputFile: args.input, outputFile: args.output})
+      const runtime = Math.round(performance.now() - then)
+      if (result.remainingProcs === 0) {
+        spinner.succeed(`[${runtime}ms] fully converted -> ${result.outputFile} (zero StringProcs)`)
+      } else {
+        spinner.warn(`[${runtime}ms] converted -> ${result.outputFile} with ${result.remainingProcs} StringProcs remaining (new procs need lich-5 recognizer/manual/crossing coverage)`)
+      }
+    } catch (err: any) {
+      spinner.fail(err.message)
+      process.exit(1)
+    }
+    process.exit(0)
+  })
+
   program.command("git")
     .description("outputs the mapdb on the file system that is useful for git")
     .option("--dr", "run in dragonrealms mode", false)

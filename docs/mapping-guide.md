@@ -268,6 +268,76 @@ These are enforced by the validator; internalizing them saves you a red CI run.
 
 ---
 
+## Don't want to write JSON? The phrasebook
+
+You can keep writing StringProcs — locally, the way you always have — and
+let Lich translate them:
+
+```
+;e Map.convert_string("fput 'open gate'; move 'go gate'")
+;e Map.convert_edge(1230, '30523')
+```
+
+`convert_string` takes proc source (a leading `;e ` is fine) and echoes the
+schema plus validation. `convert_edge` converts a proc **already in your
+loaded map**, in place — so your flow is: add the `;e` proc to your local
+map file as always, test it live, run `convert_edge`, re-test the converted
+edge with `Room[X].wayto['Y'].call`, and paste the echoed JSON into your
+submission. (`type: :timeto` on `convert_string` for cost procs.)
+
+The converter recognizes *canonical spellings*, not arbitrary Ruby. Write
+your proc in one of these shapes (placeholders in CAPS) and conversion is
+guaranteed. Deviating — extra clauses, different ordering, clever tricks —
+means it won't convert, on purpose.
+
+**Crossings (`wayto`):**
+
+| To do this | Write exactly |
+|---|---|
+| Commands in sequence | `fput 'CMD'; move 'CMD'; waitrt?; sleep N; pause` (any mix, `;`-separated; `multifput 'A','B'`, `multimove 'A','B'`, `echo 'MSG'` also fine) |
+| Send, then wait for a line | `fput 'CMD'; waitfor 'LINE'` |
+| Sends, then wait | `multifput 'CMD1','CMD2'; waitfor 'LINE'` |
+| Timed command + roundtime | `dothistimeout 'CMD',N,/PATTERN/;waitrt?` |
+| Search until found, then enter | `begin; r = dothistimeout 'CMD', 5, /FAIL\|FIND/; waitrt?; end until r =~ /FIND/; move 'ENTER'` |
+| Try up to N times to walk in | `N.times { move 'CMD'; break if Room.current.id == DEST }` |
+| Repeat until the room changes | `id=Room.current.id;move 'CMD' until Room.current.id != id` |
+| Walk until arrival | `move 'CMD' until Room.current.id == DEST` |
+| Branch on an active spell | `if checkspell(N) then move 'A' else move 'B' end; waitrt?` |
+| Cast a buff, then move | `if resolve = Spell[N] and resolve.known? and resolve.affordable? and not resolve.active?; resolve.cast; end; move 'CMD'; waitrt?` |
+| Blocked way with fallback | `room = Room.current.id;fput 'CMD'; if ( room == Room.current.id ); fput 'FIX';move 'CMD'; end` |
+| Move while a path persists | `move 'CMD' while checkpaths.include?('DIR')` |
+| Passive carry (rides) | `wait_until { Map.current.id != HERE }` |
+| Private table | `table = "NAME"; fput "go #{table} table" if dothistimeout(...)` *(the standard table proc — copy an existing one)* |
+
+**Cost gates (`timeto`):**
+
+| To do this | Write exactly |
+|---|---|
+| Delegate to a shared gate | `Map[ROOM].timeto['DEST'].call;` |
+| Setting on/off | `UserVars.mapdb_use_NAME == true ? COST : nil` |
+| Profession/race/gender | `Stats.prof == 'NAME' ? COST : nil` |
+| Active spell, cheaper | `checkspell(N) ? FAST : SLOW` |
+| Citizenship, custom vars, months, skills… | see the requirement reference and write the schema directly — most gates are one line either way |
+
+If your proc doesn't convert, either reshape it to a canonical form, write
+the schema by hand from the cookbook, or — if it's a pattern several edges
+will want — ask for a recognizer or a sugar strategy.
+
+---
+
+## Referencing rooms by game uid
+
+Anywhere schema references a room — `same_as`, `cross`, `in_room:`,
+`until_room` — you may use the game's uid (`"u4560051"`, the `u` number in
+the room line) instead of the mapdb id. Uids are the game's ground truth:
+they survive mapdb renumbering and merges, and `in_room:`/`until_room`
+checks against a uid compare directly with the live game stream. Prefer
+uids for rooms that have exactly one; keep mapdb ids where a room has no
+uid or several (day/night variants) — an ambiguous uid reference resolves
+to "not routable," never a guess.
+
+---
+
 ## Testing your edges
 
 After editing, reload and exercise the edge directly — don't rely on

@@ -33,9 +33,20 @@ export const WaytoStrategyValidator = z.object({
   strategy: z.string(),
 }).catchall(z.unknown())
 
+/**
+ * A crossing that names reusable step lists once and references them by name
+ * via `steps_ref`, so a body used several times is stored once rather than
+ * inlined per use.
+ */
+export const WaytoDefineValidator = z.object({
+  define: z.record(z.string(), WaytoStepsValidator),
+  steps: WaytoStepsValidator,
+}).catchall(z.unknown())
+
 /** Any schema wayto value (plain movement strings validated separately) */
 export const WaytoSchemaValidator = z.union([
   WaytoStepsValidator,
+  WaytoDefineValidator,
   WaytoStrategyValidator,
 ])
 

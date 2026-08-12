@@ -3,6 +3,15 @@
 *A guide for mappers: adding and changing rooms and edges in the
 StringProc-free mapdb.*
 
+> **Where this applies today.** Safety no longer waits on the mapdb
+> changing format. Lich converts `;e` procs to schema **at execution time**
+> and never evals them, so a stock mapdb is already safe to run and the
+> published map stays in proc form for now. That makes schema the thing to
+> write when you author a *new* special edge, and the vocabulary below the
+> spec your procs must match to be convertible — but it does not mean the
+> mapdb has been converted. Everything here is correct either way; only the
+> timing of the repo-side flip has moved.
+
 ---
 
 ## What changed, and what didn't
@@ -280,10 +289,26 @@ let Lich translate them:
 
 `convert_string` takes proc source (a leading `;e ` is fine) and echoes the
 schema plus validation. `convert_edge` converts a proc **already in your
-loaded map**, in place — so your flow is: add the `;e` proc to your local
-map file as always, test it live, run `convert_edge`, re-test the converted
-edge with `Room[X].wayto['Y'].call`, and paste the echoed JSON into your
-submission. (`type: :timeto` on `convert_string` for cost procs.)
+loaded map**, in place.
+
+Neither is a separate offline tool: Lich no longer evals map procs at all.
+Every `;e` edge is wrapped at load and converted to schema the first time
+it is used, then the schema is what runs. So `convert_edge` shows you
+**what your edge is already doing at runtime** — it makes the conversion
+visible and immediate rather than lazy, against the same recognizers.
+
+That gives the useful property that an edge which converts here is an edge
+that works, and one that refuses is one Lich cannot route. Your flow: add
+the `;e` proc to your local map file as always, test it live, run
+`convert_edge` to see the schema, re-test with `Room[X].wayto['Y'].call`,
+and paste the echoed JSON into your submission. (`type: :timeto` on
+`convert_string` for cost procs.)
+
+If an edge refuses, `;e Map.conversion_report` lists every refusal this
+session, and `;e Map.conversion_report(true)` adds which recognizer matched
+each converted body. Refusals are also appended to
+`logs/mapengine-refusals.log`, one line per distinct idiom, so you can hand
+the file over without reproducing anything.
 
 The converter recognizes *canonical spellings*, not arbitrary Ruby. Write
 your proc in one of these shapes (placeholders in CAPS) and conversion is

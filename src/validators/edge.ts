@@ -34,12 +34,13 @@ export const WaytoStrategyValidator = z.object({
 }).catchall(z.unknown())
 
 /**
- * A crossing that names reusable step lists once and references them by name
- * via `steps_ref`, so a body used several times is stored once rather than
- * inlined per use.
+ * A crossing in object form. `define` is optional: it names reusable step
+ * lists that the body references by name via `steps_ref`, so a body used
+ * several times is stored once rather than inlined per use. A crossing with
+ * nothing to reuse is just `{ steps }`.
  */
 export const WaytoDefineValidator = z.object({
-  define: z.record(z.string(), WaytoStepsValidator),
+  define: z.record(z.string(), WaytoStepsValidator).optional(),
   steps: WaytoStepsValidator,
 }).catchall(z.unknown())
 
